@@ -16,9 +16,8 @@ const Profile = () => {
   ];
 
   const handleContinue = () => {
-    // Navigate to next step or main app
-    console.log("Profile created:", { name, avatar: selectedAvatar });
-    // You can navigate to another page or show success
+    // Navigate to the chat page
+    navigate("/chat");
   };
 
   return (
