@@ -1,11 +1,15 @@
 import { Button } from "@/components/ui/button";
-import { Mic } from "lucide-react";
+import { Mic, History } from "lucide-react";
 import { useState, useRef } from "react";
-import ParticleField from "@/components/ParticleField";
+import ARView from "@/components/ARView";
+import { Badge } from "@/components/ui/badge";
+import SessionHistory from "@/components/SessionHistory";
 
 const Chat = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [responseText, setResponseText] = useState("");
+  const [animation, setAnimation] = useState("idle");
+  const [emotion, setEmotion] = useState("neutral");
   const [isLoading, setIsLoading] = useState(false);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const audioChunks = useRef<Blob[]>([]);
@@ -14,9 +18,10 @@ const Chat = () => {
     setIsLoading(true);
     const formData = new FormData();
     formData.append("file", audioBlob, "recording.wav");
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
     try {
-      const response = await fetch("http://localhost:8000/conversation/", {
+      const response = await fetch(`${backendUrl}/conversation/`, {
         method: "POST",
         body: formData,
       });
@@ -27,10 +32,16 @@ const Chat = () => {
 
       const data = await response.json();
       setResponseText(data.response_text);
+      setAnimation(data.animation);
+      setEmotion(data.emotion);
 
       // Play the returned audio
       const audio = new Audio(`data:audio/mp3;base64,${data.audio_output}`);
       audio.play();
+      audio.onended = () => {
+        setAnimation("idle");
+        setEmotion("neutral");
+      };
 
     } catch (error) {
       console.error("Error sending audio to backend:", error);
@@ -75,34 +86,57 @@ const Chat = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-space relative overflow-hidden flex flex-col">
-      <ParticleField />
+    <div className="min-h-screen relative">
+      <ARView animation={animation}>
+        {/* 3D content will go here */}
+      </ARView>
 
-      <div className="relative z-10 flex-grow flex flex-col items-center justify-center p-4">
-        {/* AR Mate display placeholder */}
-        <div className="w-64 h-64 bg-secondary/30 rounded-full mb-8 flex items-center justify-center">
-          <p className="text-muted-foreground">AR Mate</p>
+      {/* UI Overlay */}
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-between p-4 pointer-events-none">
+        <div className="w-full flex justify-end pointer-events-auto">
+          <SessionHistory>
+            <Button variant="ghost" size="icon" className="text-white">
+              <History className="w-6 h-6" />
+            </Button>
+          </SessionHistory>
         </div>
+        <div className="w-full max-w-md pointer-events-auto">
+          {/* Emotion Badge */}
+          <div className="flex justify-center mb-2">
+            {emotion !== "neutral" && (
+              <Badge variant="outline" className="border-accent/30 text-accent bg-card/80 backdrop-blur-sm">
+                {
+                  {
+                    happy: "🙂 Happy",
+                    sad: "😔 Sad",
+                    angry: "😡 Angry",
+                  }[emotion]
+                }
+              </Badge>
+            )}
+          </div>
+          {/* Response text display */}
+          <div className="min-h-24 bg-card/80 backdrop-blur-sm rounded-2xl p-4 border border-accent/20 shadow-glow mb-8 flex items-center justify-center">
+            <p className="text-foreground text-center">
+              {isLoading ? "Thinking..." : responseText || "I'm listening..."}
+            </p>
+          </div>
 
-        {/* Response text display */}
-        <div className="w-full max-w-md min-h-24 bg-card/80 backdrop-blur-sm rounded-2xl p-4 border border-accent/20 shadow-glow mb-8 flex items-center justify-center">
-          <p className="text-foreground text-center">
-            {isLoading ? "Thinking..." : responseText || "I'm listening..."}
-          </p>
+          {/* Microphone button */}
+          <div className="flex flex-col items-center">
+            <Button
+              size="lg"
+              className={`rounded-full w-20 h-20 transition-all duration-300 ${isRecording ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-accent hover:bg-accent/90'}`}
+              onClick={handleMicClick}
+              disabled={isLoading}
+            >
+              <Mic className="w-8 h-8 text-white" />
+            </Button>
+            <p className="text-white mt-4">
+              {isLoading ? "Processing..." : (isRecording ? "Recording..." : "Tap to speak")}
+            </p>
+          </div>
         </div>
-
-        {/* Microphone button */}
-        <Button
-          size="lg"
-          className={`rounded-full w-20 h-20 transition-all duration-300 ${isRecording ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-accent hover:bg-accent/90'}`}
-          onClick={handleMicClick}
-          disabled={isLoading}
-        >
-          <Mic className="w-8 h-8 text-white" />
-        </Button>
-        <p className="text-muted-foreground mt-4">
-          {isLoading ? "Processing..." : (isRecording ? "Recording..." : "Tap to speak")}
-        </p>
       </div>
     </div>
   );
