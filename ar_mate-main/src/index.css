@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* AR Mate Design System - Cosmic AI Companion Theme */
+
+@layer base {
+  :root {
+    /* Core cosmic theme colors */
+    --background: 220 27% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 224 71% 4%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 263 70% 50%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    /* Cosmic accent - bright cyan/electric blue */
+    --accent: 189 100% 65%;
+    --accent-foreground: 224 71% 4%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 32.6% 17.5%;
+    --input: 217 32.6% 17.5%;
+    --ring: 189 100% 65%;
+
+    --radius: 0.5rem;
+
+    /* Cosmic gradient colors */
+    --gradient-start: 220 27% 8%;
+    --gradient-end: 263 70% 12%;
+    --hero-glow: 189 100% 65%;
+
+    /* Custom shadows and effects */
+    --glow-shadow: 0 0 30px hsl(189 100% 65% / 0.3), 0 0 60px hsl(189 100% 65% / 0.1);
+    --button-glow: 0 0 20px hsl(189 100% 65% / 0.4), 0 4px 20px hsl(189 100% 65% / 0.2);
+    --hero-text-glow: 0 0 30px hsl(189 100% 65% / 0.6);
+
+    /* Animation durations */
+    --float-duration: 6s;
+    --pulse-duration: 2s;
+
+    --sidebar-background: 224 71% 4%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 189 100% 65%;
+    --sidebar-primary-foreground: 224 71% 4%;
+    --sidebar-accent: 217 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 32.6% 17.5%;
+    --sidebar-ring: 189 100% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
