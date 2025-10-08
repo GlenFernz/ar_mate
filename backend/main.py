@@ -13,20 +13,35 @@ from google.cloud import texttospeech
 app = FastAPI()
 
 # --- API Keys and Configuration ---
-# Make sure to replace "YOUR_OPENAI_API_KEY" with your actual OpenAI API key.
-# It is recommended to use environment variables for API keys.
-openai.api_key = os.getenv("OPENAI_API_KEY", "YOUR_OPENAI_API_KEY")
+# IMPORTANT: You must set the following environment variables for the application to work.
+#
+# 1. OPENAI_API_KEY:
+#    Your API key from OpenAI.
+#    In your terminal, you can set it like this:
+#    export OPENAI_API_KEY='your_openai_api_key_here'
+#
+# 2. GOOGLE_APPLICATION_CREDENTIALS:
+#    The absolute path to your Google Cloud service account JSON file.
+#    This file is required for both Firebase Admin and Google Text-to-Speech.
+#    Download it from your Firebase project settings > Service accounts.
+#    In your terminal, you can set it like this:
+#    export GOOGLE_APPLICATION_CREDENTIALS='/path/to/your/serviceAccountKey.json'
+#
+# DO NOT COMMIT your API keys or service account files to version control.
+
+# Load OpenAI API key from environment variable
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # --- Firebase Configuration ---
-# Make sure to download your Firebase service account key and set the path.
-# It is recommended to use environment variables for the key file path.
+# The Firebase Admin SDK uses the GOOGLE_APPLICATION_CREDENTIALS environment
+# variable to find the service account credentials.
 try:
-    cred = credentials.Certificate(os.getenv("FIREBASE_SERVICE_ACCOUNT_KEY_PATH", "path/to/your/serviceAccountKey.json"))
-    firebase_admin.initialize_app(cred)
+    firebase_admin.initialize_app()
     db = firestore.client()
     print("Firebase initialized successfully.")
 except Exception as e:
     print(f"Firebase initialization failed: {e}")
+    print("Please ensure the GOOGLE_APPLICATION_CREDENTIALS environment variable is set correctly.")
     db = None
 
 # Lazily loaded models and clients
@@ -36,6 +51,7 @@ tts_client = None
 def get_emotion_classifier():
     global emotion_classifier
     if emotion_classifier is None:
+        # This model is loaded locally and doesn't require an API key.
         emotion_classifier = pipeline("sentiment-analysis", model="michellejieli/emotion_text_classifier")
     return emotion_classifier
 
@@ -43,9 +59,11 @@ def get_tts_client():
     global tts_client
     if tts_client is None:
         try:
+            # The Google TTS client also uses GOOGLE_APPLICATION_CREDENTIALS.
             tts_client = texttospeech.TextToSpeechClient()
         except Exception as e:
             print(f"Failed to initialize Google TTS client: {e}")
+            print("Please ensure the GOOGLE_APPLICATION_CREDENTIALS environment variable is set correctly.")
             return None
     return tts_client
 
@@ -61,9 +79,9 @@ class ConversationResponse(BaseModel):
 
 async def speech_to_text(audio_file_path: str) -> str:
     """Converts speech from an audio file to text using Whisper API."""
-    if not openai.api_key or openai.api_key == "YOUR_OPENAI_API_KEY":
-        print("OpenAI API key not set. Returning a dummy transcript.")
-        return "This is a dummy transcript because the OpenAI API key is not configured."
+    if not openai.api_key:
+        print("OpenAI API key not set. Please set the OPENAI_API_KEY environment variable.")
+        raise HTTPException(status_code=500, detail="OpenAI API key is not configured on the server.")
 
     print(f"Speech-to-Text for {audio_file_path}")
     try:
@@ -79,9 +97,9 @@ async def speech_to_text(audio_file_path: str) -> str:
 
 async def get_gpt_response(text: str) -> str:
     """Generates a conversational response using OpenAI GPT API."""
-    if not openai.api_key or openai.api_key == "YOUR_OPENAI_API_KEY":
-        print("OpenAI API key not set. Returning a dummy response.")
-        return f"This is a dummy response because the OpenAI API key is not configured."
+    if not openai.api_key:
+        print("OpenAI API key not set. Please set the OPENAI_API_KEY environment variable.")
+        raise HTTPException(status_code=500, detail="OpenAI API key is not configured on the server.")
 
     print(f"Getting GPT response for: '{text}'")
     try:
@@ -130,15 +148,12 @@ def get_animation_for_emotion(emotion: str) -> str:
     }
     return animation_map.get(emotion, "idle")
 
-from google.cloud import texttospeech
-
 async def text_to_speech(text: str) -> str:
     """Converts text to speech using Google TTS and returns it as a base64 encoded string."""
     client = get_tts_client()
     if not client:
-        print("Google TTS client not available. Returning a dummy audio.")
-        dummy_audio_content = b"dummy_audio_data"
-        return base64.b64encode(dummy_audio_content).decode('utf-8')
+        print("Google TTS client not available. Please check your GOOGLE_APPLICATION_CREDENTIALS.")
+        raise HTTPException(status_code=500, detail="Text-to-speech service is not configured on the server.")
 
     print(f"Text-to-Speech for: '{text}'")
     try:
