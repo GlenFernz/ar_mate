@@ -1,0 +1,25 @@
+# Environments
+.env*
+serviceAccountKey.json
+
+# Log files
+*.log
+
+# Dependency directories
+node_modules/
+__pycache__/
+venv/
+.venv/
+
+# Build artifacts
+dist/
+build/
+target/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
